@@ -1,9 +1,13 @@
 if length(ARGS) == 0
-    push!(ARGS, "hard test") 
+    push!(ARGS, "hard test")
     error("tag not found")
 end # push!(ARGS, "")
 
-cd("C:\\Users\\rmsms\\OneDrive\\lab\\Multiscale")
+if Sys.iswindows()
+    cd("C:/Users/rmsms/OneDrive/lab/Multiscale")
+elseif Sys.islinux()
+    cd("/home/ryu/multiscale")
+end
 
 @time using LightGraphs
 @time using Statistics
@@ -39,7 +43,7 @@ function simulation(new_folder, seed, tag;
 
     Random.seed!(seed)
     if seed == 0
-        report = open(new_folder * "\\report " * string(seed) * ".txt", "a")
+        report = open(new_folder * "/report " * string(seed) * ".txt", "a")
 
         println(report, "backbone size = $backbone_size")
         println(report, "m_0 = $m_0")
@@ -52,11 +56,11 @@ function simulation(new_folder, seed, tag;
         println(report, "β_B = $β_B")
         println(report, "tag : $tag")
 
-        time_histogram = open(new_folder * "\\time_histogram " * string(seed) * ".csv", "a")
+        time_histogram = open(new_folder * "/time_histogram " * string(seed) * ".csv", "a")
     end
 
     if seed < 11
-        time_evolution = open(new_folder * "\\time_evolution " * string(seed) * ".csv", "a")
+        time_evolution = open(new_folder * "/time_evolution " * string(seed) * ".csv", "a")
         println(time_evolution,"t, I_A, I_B, R_B, V, hub_I_B")
     end
 
@@ -198,7 +202,7 @@ function simulation(new_folder, seed, tag;
 
             print(time_evolution, sum((stateB .== 'I') .& (location .< 21)), ", ")
 
-            print(time_evolution, "\n")
+            print(time_evolution, "/n")
         end
         if seed == 0
             k_B = replace(replace(string(k_B), "[" => ""), "]" => "")
@@ -212,7 +216,7 @@ function simulation(new_folder, seed, tag;
 
             m = length(walker)
             coordinate = rand(uniformDdist, m, 2)
-            for j in 1:10
+            for j in 1:5
                 coordinate = mod.(coordinate + rand(normalDist, m, 2), 1)
                 contact = 0.0 .< pairwise(Euclidean(), coordinate; dims=1) .< 0.1
 
@@ -237,7 +241,7 @@ function simulation(new_folder, seed, tag;
                     markercolor = coloring,
                     markersize = 8,
                     markerstrokecolor = :black,
-                    ), new_folder * "\\" * "$j.png")
+                    ), new_folder * "/" * "$j.png")
                 end
 
                 for k in 1:m
@@ -321,57 +325,57 @@ function simulation(new_folder, seed, tag;
 end
 
 #---
-itr = 10
+itr = 1000
 println("itr : ", itr)
 println("number of threads : ", nthreads())
 
 #---
 
-# seed = [0]
-# new_folder = string(NOW)[3:10] * "@" * string(NOW)[12:13] * "-" *
-#  string(NOW)[15:16] * " (" * string(seed[1]) * ")";
-# mkdir(new_folder)
-#
-# meta_data = open(new_folder * "\\meta_data " * string(seed[1]) * ".csv", "a")
-# # println(meta_data,"t, I_A, R_B, V, hub_I, comp_I")
-# println(meta_data,"seed, t, I_A, R_B, V, hub_I, hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10, hub_V_1, hub_V_2, hub_V_3, hub_V_4, hub_V_5, hub_V_6, hub_V_7, hub_V_8, hub_V_9, hub_V_10")
-#
-# r = Array{Array{Int64,1},1}()
-# # simulation(new_folder, 0, tag = ARGS[1])
-# @threads for itr0 in 0:itr
-#     push!(r,simulation(new_folder, itr0, ARGS[1], β_A = 0.7, γ_A = 0.2))
-#     # push!(r,simulation(new_folder, itr0, tag = ARGS[1]))
-#     println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
-#     print("|")
-# end
-# println("")
-#
-# close(meta_data)
+seed = [0]
+new_folder = string(NOW)[3:10] * "@" * string(NOW)[12:13] * "-" *
+ string(NOW)[15:16] * " (" * string(seed[1]) * ")";
+mkdir(new_folder)
+
+meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
+# println(meta_data,"t, I_A, R_B, V, hub_I, comp_I")
+println(meta_data,"seed, t, I_A, R_B, V, hub_I, hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10, hub_V_1, hub_V_2, hub_V_3, hub_V_4, hub_V_5, hub_V_6, hub_V_7, hub_V_8, hub_V_9, hub_V_10")
+
+r = Array{Array{Int64,1},1}()
+# simulation(new_folder, 0, tag = ARGS[1])
+@threads for itr0 in 0:itr
+    push!(r,simulation(new_folder, itr0, ARGS[1], β_A = 0.7, γ_A = 0.2))
+    # push!(r,simulation(new_folder, itr0, tag = ARGS[1]))
+    println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
+    print("|")
+end
+println("")
+
+close(meta_data)
 
 #---
 
-parameter_length = 20
-seed = rand(10000:99999,21)
-change = (0:parameter_length)/parameter_length
-@time for t in 1:21
-    print(seed[t])
-    new_folder = "prmt=" * string(change[t]) * "..." * string(NOW)[3:10] * "@" * string(NOW)[12:13] * "-" *
-     string(NOW)[15:16] * " (" * string(seed[t]) * ")";
-    mkdir(new_folder)
-
-    meta_data = open(new_folder * "\\meta_data " * string(seed[t]) * ".csv", "a")
-    println(meta_data,"seed, t, I_A, R_B, V, hub_I, hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10, hub_V_1, hub_V_2, hub_V_3, hub_V_4, hub_V_5, hub_V_6, hub_V_7, hub_V_8, hub_V_9, hub_V_10")
-
-    r = Array{Array{Int64,1},1}()
-    # simulation(new_folder, 0, p = change[t])
-    # simulation(new_folder, 0, σ = change[t])
-    @threads for itr0 in 0:itr
-        push!(r,simulation(new_folder, itr0, ARGS[1], β_A = change[t], γ_A = 0.2))
-        # push!(r,simulation(new_folder, itr0, p = change[t] , σ = parse(Float64, ARGS[1])))
-        println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
-        print("|")
-    end
-    println("")
-
-    close(meta_data)
-end
+# parameter_length = 20
+# seed = rand(10000:99999,21)
+# change = (0:parameter_length)/parameter_length
+# @time for t in 1:21
+#     print(seed[t])
+#     new_folder = "prmt=" * string(change[t]) * "..." * string(NOW)[3:10] * "@" * string(NOW)[12:13] * "-" *
+#      string(NOW)[15:16] * " (" * string(seed[t]) * ")";
+#     mkdir(new_folder)
+#
+#     meta_data = open(new_folder * "/meta_data " * string(seed[t]) * ".csv", "a")
+#     println(meta_data,"seed, t, I_A, R_B, V, hub_I, hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10, hub_V_1, hub_V_2, hub_V_3, hub_V_4, hub_V_5, hub_V_6, hub_V_7, hub_V_8, hub_V_9, hub_V_10")
+#
+#     r = Array{Array{Int64,1},1}()
+#     # simulation(new_folder, 0, p = change[t])
+#     # simulation(new_folder, 0, σ = change[t])
+#     @threads for itr0 in 0:itr
+#         push!(r,simulation(new_folder, itr0, ARGS[1], β_A = change[t], γ_A = 0.2))
+#         # push!(r,simulation(new_folder, itr0, p = change[t] , σ = parse(Float64, ARGS[1])))
+#         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
+#         print("|")
+#     end
+#     println("")
+#
+#     close(meta_data)
+# end
