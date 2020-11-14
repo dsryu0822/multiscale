@@ -33,7 +33,7 @@ function happen(threshold::Float64)
 end
 
 function simulation(new_folder, seed, tag;
-    σ = 0.5, β_A = 0.9, β_B = 0.015, p = 0.5, γ_A = 0.2,
+    σ = 0.5, β_A = 0.5, β_B = 0.02, p = 0.5, γ_A = 0.1,
     N = 5 * 10^4)
 
      # number of individuals
@@ -59,9 +59,9 @@ function simulation(new_folder, seed, tag;
         time_histogram = open(new_folder * "/time_histogram " * string(seed) * ".csv", "a")
     end
 
-    if seed < 11
+    if seed < 1001
         time_evolution = open(new_folder * "/time_evolution " * string(seed) * ".csv", "a")
-        println(time_evolution,"t, I_A, I_B, R_B, V, hub_I_B")
+        println(time_evolution,"t, I_A, I_B, R_B, V, hub_I_B, comp_I")
     end
 
     layerA = erdos_renyi(N, 5N)
@@ -73,7 +73,7 @@ function simulation(new_folder, seed, tag;
     local stateA = ['S' for _ in 1:N]
     local stateB = ['S' for _ in 1:N]
     local location = [rand(1:M) for _ in 1:N]
-    local host_ID = rand(1:N)
+    local host_ID = rand(1:N, 3)
 
     local hub_I = 0
     local comp_I = 0
@@ -121,20 +121,20 @@ function simulation(new_folder, seed, tag;
     end
 
     if seed == 0
-        location[host_ID] = 1
+        location[host_ID] .= 1
     end
 
-    stateB[host_ID] = 'I'
-    stateA[host_ID] = 'I'
-    host_k_B = sum(location.==location[host_ID])
-    host_k_C = length(layerC.fadjlist[location[host_ID]])
+    stateB[host_ID] .= 'I'
+    stateA[host_ID] .= 'I'
+    # host_k_B = sum(location.==location[host_ID])
+    # host_k_C = length(layerC.fadjlist[location[host_ID]])
 
-    if seed == 0
-        println(report, "host ID : $host_ID")
-        println(report, "host location : ", location[host_ID])
-        println(report, "host degree of layerB : $host_k_B")
-        println(report, "host degree of layerC : $host_k_C")
-    end
+    # if seed == 0
+    #     println(report, "host ID : $host_ID")
+    #     println(report, "host location : ", location[host_ID])
+    #     println(report, "host degree of layerB : $host_k_B")
+    #     println(report, "host degree of layerC : $host_k_C")
+    # end
 
     # while t < 30
     while sum(stateB .== 'I') != 0
@@ -190,7 +190,7 @@ function simulation(new_folder, seed, tag;
             hub_V_10 = sum((stateB .== 'V') .& (location .< 21))
         end
 
-        if seed < 11
+        if seed < 1001
             k_B = [sum(location .== j) for j in 1:M]
             print(time_evolution, t, ", ")
 
@@ -201,8 +201,9 @@ function simulation(new_folder, seed, tag;
             print(time_evolution, sum(stateB .== 'V'), ", ")
 
             print(time_evolution, sum((stateB .== 'I') .& (location .< 21)), ", ")
+            print(time_evolution, sum((stateB .== 'I') .& (location .> 20)), "\n")
 
-            print(time_evolution, "/n")
+            # print(time_evolution, "/n")
         end
         if seed == 0
             k_B = replace(replace(string(k_B), "[" => ""), "]" => "")
@@ -312,7 +313,7 @@ function simulation(new_folder, seed, tag;
         close(report)
         close(time_histogram)
     end
-    if seed < 11
+    if seed < 1001
         close(time_evolution)
     end
 
@@ -342,8 +343,8 @@ println(meta_data,"seed, t, I_A, R_B, V, hub_I, hub_I_1, hub_I_2, hub_I_3, hub_I
 
 r = Array{Array{Int64,1},1}()
 # simulation(new_folder, 0, tag = ARGS[1])
-@threads for itr0 in 0:itr
-    push!(r,simulation(new_folder, itr0, ARGS[1], β_A = 0.7, γ_A = 0.2))
+@threads for itr0 in 1:itr
+    push!(r,simulation(new_folder, itr0, ARGS[1], β_B = 0.04, p = 0.9))
     # push!(r,simulation(new_folder, itr0, tag = ARGS[1]))
     println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
     print("|")
@@ -370,7 +371,7 @@ close(meta_data)
 #     # simulation(new_folder, 0, p = change[t])
 #     # simulation(new_folder, 0, σ = change[t])
 #     @threads for itr0 in 0:itr
-#         push!(r,simulation(new_folder, itr0, ARGS[1], β_A = change[t], γ_A = 0.2))
+#         push!(r,simulation(new_folder, itr0, ARGS[1], β_B = 0.02 + change[t]/100, p = 0.8))
 #         # push!(r,simulation(new_folder, itr0, p = change[t] , σ = parse(Float64, ARGS[1])))
 #         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
 #         print("|")
