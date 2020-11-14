@@ -9,15 +9,15 @@ elseif Sys.islinux()
     cd("/home/ryu/multiscale")
 end
 
+# @time using Plots
+@time using Distributions
 @time using LightGraphs
+@time using LinearAlgebra
 @time using Statistics
 @time using Base.Threads
 @time using Dates
 @time using Random
-@time using Distributions
-@time using LinearAlgebra
 @time using Distances
-@time using Plots
 
 NOW = Dates.now()
 println(Dates.now())
@@ -314,15 +314,16 @@ close(meta_data)
 r = Array{Array{Int64,1},1}()
 
 itr_container = Array{Array{Int64,1},1}()
-temp = Array{Int64,1}()
-for i in itr_begin:itr_end
-    if ((i-1) % 100) == 0
-        push!(itr_container, temp)
-        temp = Array{Int64,1}()
+let temp = Array{Int64,1}()
+    for i in itr_begin:itr_end
+        if ((i-1) % 100) == 0
+            push!(itr_container, temp)
+            temp = Array{Int64,1}()
+        end
+        push!(temp, i)
     end
-    push!(temp, i)
+    push!(itr_container, temp)
 end
-push!(itr_container, temp)
 if itr_begin != itr_end popfirst!(itr_container) end
 
 
