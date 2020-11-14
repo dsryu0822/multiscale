@@ -318,7 +318,7 @@ temp = Array{Int64,1}()
 for i in itr_begin:itr_end
     if ((i-1) % 100) == 0
         push!(itr_container, temp)
-        empty!(temp)
+        temp = Array{Int64,1}()
     end
     push!(temp, i)
 end
@@ -333,7 +333,7 @@ for itr_block in itr_container
         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
         print("|")
     end
-    println(itr_block[end])
+    println(j[end])
     close(meta_data)
 end
 println("")
