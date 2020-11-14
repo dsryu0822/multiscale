@@ -18,7 +18,7 @@ end
 @time using LinearAlgebra
 @time using Distances
 @time using Plots
-# include("Configuration Model.jl")
+
 NOW = Dates.now()
 println(Dates.now())
 println("package loading complete")
@@ -33,10 +33,10 @@ function happen(threshold::Float64)
 end
 
 function simulation(new_folder, seed, tag;
-    σ = 0.5, β_A = 0.5, β_B = 0.02, p = 0.5, γ_A = 0.1,
+    σ = 0.5, β_A = 0.5, β_B = 0.035, p = 0.8, γ_A = 0.1,
     N = 5 * 10^4)
 
-     # number of individuals
+    # number of individuals
     backbone_size = 1000 # size of barabasi_albert network
     m_0 = 20 # initial hub size, barabasi_albert
     m = 3 # number of new link, barabasi_albert
@@ -61,7 +61,7 @@ function simulation(new_folder, seed, tag;
 
     if seed < 1001
         time_evolution = open(new_folder * "/time_evolution " * string(seed) * ".csv", "a")
-        println(time_evolution,"t, I_A, I_B, R_B, V, hub_I_B, comp_I")
+        println(time_evolution,"t, I_A, hub_S_B, R_B, V, hub_I_B, in_flux, out_flux, comp_I")
     end
 
     layerA = erdos_renyi(N, 5N)
@@ -89,21 +89,13 @@ function simulation(new_folder, seed, tag;
     local hub_I_9 = 0
     local hub_I_10 = 0
 
-    local hub_V_1 = 0
-    local hub_V_2 = 0
-    local hub_V_3 = 0
-    local hub_V_4 = 0
-    local hub_V_5 = 0
-    local hub_V_6 = 0
-    local hub_V_7 = 0
-    local hub_V_8 = 0
-    local hub_V_9 = 0
-    local hub_V_10 = 0
+    local from = 0
+    local to = 0
+    local in_flux = 0
+    local out_flux = 0
 
     t = 0
     if seed == 0
-        # k_B = [sum(location .== j) for j in 1:M]
-        # k_B = replace(replace(string(k_B), "[" => ""), "]" => "")
         k_C = length.(layerC.fadjlist)
         k_C = replace(replace(string(k_C), "[" => ""), "]" => "")
         println(time_histogram, k_C)
@@ -126,23 +118,28 @@ function simulation(new_folder, seed, tag;
 
     stateB[host_ID] .= 'I'
     stateA[host_ID] .= 'I'
-    # host_k_B = sum(location.==location[host_ID])
-    # host_k_C = length(layerC.fadjlist[location[host_ID]])
-
-    # if seed == 0
-    #     println(report, "host ID : $host_ID")
-    #     println(report, "host location : ", location[host_ID])
-    #     println(report, "host degree of layerB : $host_k_B")
-    #     println(report, "host degree of layerC : $host_k_C")
-    # end
 
     # while t < 30
     while sum(stateB .== 'I') != 0
         t = t + 1
+
+        in_flux = 0
+        out_flux = 0
+
         if t != 1
             for i in (1:N)
+                from = location[i]
                 if happen(σ) & (Int64[] != layerC.fadjlist[location[i]])
                     location[i] = rand(layerC.fadjlist[location[i]])
+                end
+                to = location[i]
+
+                if stateB[i] == 'I'
+                    if (from ≤ 20) & (to ≥ 21)
+                        out_flux += 1
+                    elseif  (from ≥ 21) & (to ≤ 20)
+                        in_flux += 1
+                    end
                 end
             end
         end
@@ -168,27 +165,6 @@ function simulation(new_folder, seed, tag;
         elseif t == 10
             hub_I_10 = sum((stateB .== 'I') .& (location .< 21))
         end
-        if t == 1
-            hub_V_1 = sum((stateB .== 'V') .& (location .< 21))
-        elseif t == 2
-            hub_V_2 = sum((stateB .== 'V') .& (location .< 21))
-        elseif t == 3
-            hub_V_3 = sum((stateB .== 'V') .& (location .< 21))
-        elseif t == 4
-            hub_V_4 = sum((stateB .== 'V') .& (location .< 21))
-        elseif t == 5
-            hub_V_5 = sum((stateB .== 'V') .& (location .< 21))
-        elseif t == 6
-            hub_V_6 = sum((stateB .== 'V') .& (location .< 21))
-        elseif t == 7
-            hub_V_7 = sum((stateB .== 'V') .& (location .< 21))
-        elseif t == 8
-            hub_V_8 = sum((stateB .== 'V') .& (location .< 21))
-        elseif t == 9
-            hub_V_9 = sum((stateB .== 'V') .& (location .< 21))
-        elseif t == 10
-            hub_V_10 = sum((stateB .== 'V') .& (location .< 21))
-        end
 
         if seed < 1001
             k_B = [sum(location .== j) for j in 1:M]
@@ -196,14 +172,14 @@ function simulation(new_folder, seed, tag;
 
             print(time_evolution, sum(stateA .== 'I'), ", ")
 
-            print(time_evolution, sum(stateB .== 'I'), ", ")
+            print(time_evolution, sum((stateB .== 'S') .& (location .< 21)), ", ")
             print(time_evolution, sum(stateB .== 'R'), ", ")
             print(time_evolution, sum(stateB .== 'V'), ", ")
 
             print(time_evolution, sum((stateB .== 'I') .& (location .< 21)), ", ")
+            print(time_evolution, in_flux, ", ")
+            print(time_evolution, out_flux, ", ")
             print(time_evolution, sum((stateB .== 'I') .& (location .> 20)), "\n")
-
-            # print(time_evolution, "/n")
         end
         if seed == 0
             k_B = replace(replace(string(k_B), "[" => ""), "]" => "")
@@ -299,12 +275,6 @@ function simulation(new_folder, seed, tag;
         stateA[stateA .== 'T'] .= 'I'
         stateB[stateB .== 'U'] .= 'V'
 
-        # stateA[stateA .== 'I'] .= 'S'
-        # stateA[stateA .== 'T'] .= 'I'
-        #
-        # stateB[stateB .== 'V'] .= 'S'
-        # stateB[stateB .== 'U'] .= 'V'
-
         stateB[stateB .== 'I'] .= 'R'
         stateB[stateB .== 'T'] .= 'I'
     end
@@ -317,17 +287,17 @@ function simulation(new_folder, seed, tag;
         close(time_evolution)
     end
 
-    hub_I = max(hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10)
+    hub_I_max = max(hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10)
 
-    # return [t, sum(stateA .== 'I'), sum(stateB .== 'R'), sum(stateB .== 'V'), hub_I, comp_I]
-    return [seed, t, sum(stateA .== 'I'), sum(stateB .== 'R'), sum(stateB .== 'V'), hub_I,
-    hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10,
-    hub_V_1, hub_V_2, hub_V_3, hub_V_4, hub_V_5, hub_V_6, hub_V_7, hub_V_8, hub_V_9, hub_V_10]
+    return [seed, t, sum(stateA .== 'I'), sum(stateB .== 'R'), sum(stateB .== 'V'), hub_I_max,
+    hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10]
 end
 
 #---
-itr = 1000
-println("itr : ", itr)
+itr_begin = 1
+itr_end = 1000
+# itr_begin = itr_end = 188
+println("itr : ", itr_end)
 println("number of threads : ", nthreads())
 
 #---
@@ -337,17 +307,34 @@ new_folder = string(NOW)[3:10] * "@" * string(NOW)[12:13] * "-" *
  string(NOW)[15:16] * " (" * string(seed[1]) * ")";
 mkdir(new_folder)
 
-meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
-# println(meta_data,"t, I_A, R_B, V, hub_I, comp_I")
-println(meta_data,"seed, t, I_A, R_B, V, hub_I, hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10, hub_V_1, hub_V_2, hub_V_3, hub_V_4, hub_V_5, hub_V_6, hub_V_7, hub_V_8, hub_V_9, hub_V_10")
+global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
+println(meta_data,"seed, t, I_A, R_B, V, hub_I_max, hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10")
+close(meta_data)
 
 r = Array{Array{Int64,1},1}()
-# simulation(new_folder, 0, tag = ARGS[1])
-@threads for itr0 in 1:itr
-    push!(r,simulation(new_folder, itr0, ARGS[1], β_B = 0.04, p = 0.9))
-    # push!(r,simulation(new_folder, itr0, tag = ARGS[1]))
-    println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
-    print("|")
+
+itr_container = Array{Array{Int64,1},1}()
+temp = Array{Int64,1}()
+for i in itr_begin:itr_end
+    if ((i-1) % 100) == 0
+        push!(itr_container, temp)
+        empty!(temp)
+    end
+    push!(temp, i)
+end
+push!(itr_container, temp)
+if itr_begin != itr_end popfirst!(itr_container) end
+
+
+for itr_block in itr_container
+    global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
+    @threads for j in itr_block
+        push!(r,simulation(new_folder, j, ARGS[1]))
+        println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
+        print("|")
+    end
+    println(itr_block[end])
+    close(meta_data)
 end
 println("")
 
