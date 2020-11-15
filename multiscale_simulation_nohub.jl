@@ -294,7 +294,7 @@ function simulation(new_folder, seed, tag;
 end
 
 #---
-itr_begin = 1
+itr_begin = 701
 itr_end = 1000
 # itr_begin = itr_end = 188
 println("itr : ", itr_end)
