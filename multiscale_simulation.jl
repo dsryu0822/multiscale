@@ -334,7 +334,7 @@ for itr_block in itr_container
         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
         print("|")
     end
-    println(j[end])
+    println(itr_block[end])
     close(meta_data)
 end
 println("")
