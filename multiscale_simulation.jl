@@ -9,7 +9,7 @@ elseif Sys.islinux()
     cd("/home/ryu/multiscale")
 end
 
-# @time using Plots
+@time using Plots
 @time using Distributions
 @time using LightGraphs
 @time using LinearAlgebra
@@ -122,6 +122,7 @@ function simulation(new_folder, seed, tag;
     # while t < 30
     while sum(stateB .== 'I') != 0
         t = t + 1
+        if t % 10 == 0 print('.') end
 
         in_flux = 0
         out_flux = 0
@@ -190,15 +191,16 @@ function simulation(new_folder, seed, tag;
         uniformDdist = Uniform(0,1)
         for i in 1:20
             walker = (1:N)[location .== i]
-
             m = length(walker)
+            if m ≤ 0 continue end
+
             coordinate = rand(uniformDdist, m, 2)
             for j in 1:5
                 coordinate = mod.(coordinate + rand(normalDist, m, 2), 1)
                 contact = 0.0 .< pairwise(Euclidean(), coordinate; dims=1) .< 0.1
 
                 # 그림 그리기
-                if (i == location[host_ID]) & (seed == -1) & (t == 1)
+                if (i ∈ location[host_ID]) & (seed == -1) & (t == 1)
                     shaping = Array{Symbol,1}(undef, m)
                     shaping[stateB[walker] .== 'R'] .= :xcross
                     shaping[stateB[walker] .== 'S'] .= :circle
@@ -209,8 +211,9 @@ function simulation(new_folder, seed, tag;
                     coloring[stateB[walker] .== 'S'] .= :green
                     coloring[stateB[walker] .== 'T'] .= :orange
                     coloring[stateB[walker] .== 'I'] .= :red
-                    png(scatter(
+                    png(plot(
                     coordinate[:,1], coordinate[:,2],
+                    seriestype = :scatter,
                     size = (800,800),
                     xlims = (0,1),
                     ylims = (0,1),
@@ -218,17 +221,23 @@ function simulation(new_folder, seed, tag;
                     markercolor = coloring,
                     markersize = 8,
                     markerstrokecolor = :black,
+                    legend = false
                     ), new_folder * "/" * "$j.png")
                 end
 
-                for k in 1:m
-                    infect = sum(contact[k,:] .* (stateB .== 'I')[walker])
-                    if (stateB[walker[k]] == 'S') & happen(1 - (1 - β_B)^infect)
-                        stateB[walker[k]] = 'T'
-                        stateA[walker[k]] = 'T'
-                        # println(k, " is infected!")
-                    end
-                end
+                n_B = contact * (stateB .== 'I')[walker]
+                π_B = 1 .- (1 - β_B).^n_B
+                infected = happen.(π_B)
+                stateB[walker[(stateB[walker] .== 'S') .& infected]] .= 'T'
+                stateA[walker[(stateA[walker] .== 'S') .& (stateB[walker] .== 'T')]] .= 'T'
+                # for k in 1:m
+                #     infect = sum(contact[k,:] .* (stateB .== 'I')[walker])
+                #     if (stateB[walker[k]] == 'S') & happen(1 - (1 - β_B)^infect)
+                #         stateB[walker[k]] = 'T'
+                #         stateA[walker[k]] = 'T'
+                #         # println(k, " is infected!")
+                #     end
+                # end
             end
         end
 
@@ -236,9 +245,12 @@ function simulation(new_folder, seed, tag;
         local π_A = [1 - (1 - β_A)^nA[i] for i in 1:N]
 
         local nB = [sum(stateB[location .== j] .== 'I') for j in 1:M]
+        n_B[1:20] .= 0
         local π_B = [1 - (1 - β_B)^nB[j] for j in 1:M]
 
-        for i in (1:N)[((π_A .+ π_B[location]) .> 0) .& (location .> 20)]
+        for i in (1:N)[
+            ((π_A .+ π_B[location]) .> 0) .&
+            ((stateA .== 'S') .| (stateB .== 'S'))]
             if (stateA[i] == 'S') & (stateB[i] == 'S')
                 if happen(π_A[i]/(π_A[i] + π_B[location[i]]))
                     if happen(π_A[i])
@@ -295,8 +307,8 @@ end
 
 #---
 itr_begin = 1
-itr_end = 1000
-# itr_begin = itr_end = 188
+itr_end = 100
+# itr_begin = itr_end = 0
 println("itr : ", itr_end)
 println("number of threads : ", nthreads())
 
@@ -330,7 +342,7 @@ if itr_begin != itr_end itr_container[1] = [0] end
 for itr_block in itr_container
     global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
     @threads for j in itr_block
-        push!(r,simulation(new_folder, j, ARGS[1]))
+        push!(r,simulation(new_folder, j, ARGS[1], β_A = 0.0, p = 0.0, β_B = 0.02))
         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
         print("|")
     end
