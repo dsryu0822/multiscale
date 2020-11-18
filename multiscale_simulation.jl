@@ -9,15 +9,15 @@ elseif Sys.islinux()
     cd("/home/ryu/multiscale")
 end
 
-@time using Plots
-@time using Distributions
-@time using LightGraphs
-@time using LinearAlgebra
 @time using Statistics
 @time using Base.Threads
 @time using Dates
 @time using Random
 @time using Distances
+@time using LinearAlgebra
+@time using LightGraphs
+@time using Distributions
+@time using Plots
 
 NOW = Dates.now()
 println(Dates.now())
@@ -34,12 +34,12 @@ end
 
 function simulation(new_folder, seed, tag;
     σ = 0.5, β_A = 0.5, β_B = 0.01, p = 0.8, γ_A = 0.1,
-    N = 5 * 10^4)
+    N = 5 * 10^4, hub = 20)
 
     # number of individuals
     backbone_size = 1000 # size of barabasi_albert network
-    m_0 = 20 # initial hub size, barabasi_albert
     m = 3 # number of new link, barabasi_albert
+    m_0 = max(hub, m) # initial hub size, barabasi_albert
 
     Random.seed!(seed)
     if seed == 0
@@ -65,7 +65,11 @@ function simulation(new_folder, seed, tag;
     end
 
     layerA = erdos_renyi(N, 5N)
-    layerC = barabasi_albert(backbone_size, m_0, m, complete = true)
+    if hub == 20
+        layerC = barabasi_albert(backbone_size, m_0, m, complete = true)
+    else
+        layerC = barabasi_albert(backbone_size, m, complete = true)
+    end
 
     N = nv(layerA)
     M = nv(layerC)
@@ -187,20 +191,37 @@ function simulation(new_folder, seed, tag;
             println(time_histogram, k_B)
         end
 
+        if hub == 20
         normalDist = Normal(0,0.05)
         uniformDdist = Uniform(0,1)
+
         for i in 1:20
             walker = (1:N)[location .== i]
-            m = length(walker)
-            if m ≤ 0 continue end
+            if sum(stateB[walker] .== 'I') ≤ 0 continue end
 
+            m = length(walker)
             coordinate = rand(uniformDdist, m, 2)
             for j in 1:5
                 coordinate = mod.(coordinate + rand(normalDist, m, 2), 1)
-                contact = 0.0 .< pairwise(Euclidean(), coordinate; dims=1) .< 0.1
+
+                S = coordinate[(stateB[walker] .== 'S'),:]
+                S_count = size(S,1)
+                S_walker = walker[stateB[walker] .== 'S']
+                I = coordinate[stateB[walker] .== 'I',:]
+                I_count = size(I,1)
+
+                D = zeros(S_count, I_count)
+                for row in 1:S_count
+                    for column in 1:I_count
+                        D[row,column] = sum((S[row,:] .- I[column,:]).^2)
+                    end
+                end
+
+                contact = 0.0 .< D .< 0.2
+                # contact = 0.0 .< pairwise(Euclidean(), coordinate; dims=1) .< 0.2
 
                 # 그림 그리기
-                if (i ∈ location[host_ID]) & (seed == -1) & (t == 1)
+                if (i ∈ location[host_ID]) & (seed == 0) & (t == 1)
                     shaping = Array{Symbol,1}(undef, m)
                     shaping[stateB[walker] .== 'R'] .= :xcross
                     shaping[stateB[walker] .== 'S'] .= :circle
@@ -225,32 +246,35 @@ function simulation(new_folder, seed, tag;
                     ), new_folder * "/" * "$j.png")
                 end
 
-                n_B = contact * (stateB .== 'I')[walker]
+                n_B = sum(contact, dims=2)[:,1]
                 π_B = 1 .- (1 - β_B).^n_B
                 infected = happen.(π_B)
-                stateB[walker[(stateB[walker] .== 'S') .& infected]] .= 'T'
+                # println(infected)
+                # println(typeof(S_walker))
+                # println(typeof(infected))
+                # println(S_walker[infected])
+                stateB[S_walker[infected]] .= 'T'
                 stateA[walker[(stateA[walker] .== 'S') .& (stateB[walker] .== 'T')]] .= 'T'
-                # for k in 1:m
-                #     infect = sum(contact[k,:] .* (stateB .== 'I')[walker])
-                #     if (stateB[walker[k]] == 'S') & happen(1 - (1 - β_B)^infect)
-                #         stateB[walker[k]] = 'T'
-                #         stateA[walker[k]] = 'T'
-                #         # println(k, " is infected!")
-                #     end
-                # end
+                # n_B = contact * (stateB .== 'I')[walker]
+                # π_B = 1 .- (1 - β_B).^n_B
+                # infected = happen.(π_B)
+                # stateB[walker[(stateB[walker] .== 'S') .& infected]] .= 'T'
+                # stateA[walker[(stateA[walker] .== 'S') .& (stateB[walker] .== 'T')]] .= 'T'
             end
+        end
         end
 
         local nA = [sum(stateA[layerA.fadjlist[i]] .== 'I') for i in 1:N]
         local π_A = [1 - (1 - β_A)^nA[i] for i in 1:N]
 
         local nB = [sum(stateB[location .== j] .== 'I') for j in 1:M]
-        n_B[1:20] .= 0
+        if hub==20 nB[1:20] .= 0 end
         local π_B = [1 - (1 - β_B)^nB[j] for j in 1:M]
 
         for i in (1:N)[
             ((π_A .+ π_B[location]) .> 0) .&
             ((stateA .== 'S') .| (stateB .== 'S'))]
+
             if (stateA[i] == 'S') & (stateB[i] == 'S')
                 if happen(π_A[i]/(π_A[i] + π_B[location[i]]))
                     if happen(π_A[i])
@@ -342,7 +366,7 @@ if itr_begin != itr_end itr_container[1] = [0] end
 for itr_block in itr_container
     global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
     @threads for j in itr_block
-        push!(r,simulation(new_folder, j, ARGS[1], β_A = 0.0, p = 0.0, β_B = 0.02))
+        push!(r,simulation(new_folder, j, ARGS[1], hub = 20, β_A = 0.0, p = 0.0, β_B = 0.005))
         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
         print("|")
     end
