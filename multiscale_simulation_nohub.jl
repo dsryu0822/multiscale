@@ -33,7 +33,7 @@ function happen(threshold::Float64)
 end
 
 function simulation(new_folder, seed, tag;
-    σ = 0.5, β_A = 0.5, β_B = 0.035, p = 0.8, γ_A = 0.1,
+    σ = 0.5, β_A = 0.5, β_B = 0.01, p = 0.8, γ_A = 0.1,
     N = 5 * 10^4)
 
     # number of individuals
@@ -65,7 +65,7 @@ function simulation(new_folder, seed, tag;
     end
 
     layerA = erdos_renyi(N, 5N)
-    layerC = barabasi_albert(backbone_size, m, complete = false)
+    layerC = barabasi_albert(backbone_size, m_0, m, complete = true)
 
     N = nv(layerA)
     M = nv(layerC)
@@ -186,59 +186,59 @@ function simulation(new_folder, seed, tag;
             println(time_histogram, k_B)
         end
 
-        normalDist = Normal(0,0.05)
-        uniformDdist = Uniform(0,1)
-        for i in 1:20
-            walker = (1:N)[location .== i]
+        # normalDist = Normal(0,0.05)
+        # uniformDdist = Uniform(0,1)
+        # for i in 1:20
+        #     walker = (1:N)[location .== i]
+        #
+        #     m = length(walker)
+        #     coordinate = rand(uniformDdist, m, 2)
+        #     for j in 1:5
+        #         coordinate = mod.(coordinate + rand(normalDist, m, 2), 1)
+        #         contact = 0.0 .< pairwise(Euclidean(), coordinate; dims=1) .< 0.1
+        #
+        #         # 그림 그리기
+        #         if (i == location[host_ID]) & (seed == -1) & (t == 1)
+        #             shaping = Array{Symbol,1}(undef, m)
+        #             shaping[stateB[walker] .== 'R'] .= :xcross
+        #             shaping[stateB[walker] .== 'S'] .= :circle
+        #             shaping[stateB[walker] .== 'T'] .= :rect
+        #             shaping[stateB[walker] .== 'I'] .= :star5
+        #             coloring = Array{Symbol,1}(undef, m)
+        #             coloring[stateB[walker] .== 'R'] .= :black
+        #             coloring[stateB[walker] .== 'S'] .= :green
+        #             coloring[stateB[walker] .== 'T'] .= :orange
+        #             coloring[stateB[walker] .== 'I'] .= :red
+        #             png(scatter(
+        #             coordinate[:,1], coordinate[:,2],
+        #             size = (800,800),
+        #             xlims = (0,1),
+        #             ylims = (0,1),
+        #             markershape = shaping,
+        #             markercolor = coloring,
+        #             markersize = 8,
+        #             markerstrokecolor = :black,
+        #             ), new_folder * "/" * "$j.png")
+        #         end
+        #
+        #         for k in 1:m
+        #             infect = sum(contact[k,:] .* (stateB .== 'I')[walker])
+        #             if (stateB[walker[k]] == 'S') & happen(1 - (1 - β_B)^infect)
+        #                 stateB[walker[k]] = 'T'
+        #                 stateA[walker[k]] = 'T'
+        #                 # println(k, " is infected!")
+        #             end
+        #         end
+        #     end
+        # end
+        #
+        # local nA = [sum(stateA[layerA.fadjlist[i]] .== 'I') for i in 1:N]
+        # local π_A = [1 - (1 - β_A)^nA[i] for i in 1:N]
+        #
+        # local nB = [sum(stateB[location .== j] .== 'I') for j in 1:M]
+        # local π_B = [1 - (1 - β_B)^nB[j] for j in 1:M]
 
-            m = length(walker)
-            coordinate = rand(uniformDdist, m, 2)
-            for j in 1:5
-                coordinate = mod.(coordinate + rand(normalDist, m, 2), 1)
-                contact = 0.0 .< pairwise(Euclidean(), coordinate; dims=1) .< 0.1
-
-                # 그림 그리기
-                if (i == location[host_ID]) & (seed == -1) & (t == 1)
-                    shaping = Array{Symbol,1}(undef, m)
-                    shaping[stateB[walker] .== 'R'] .= :xcross
-                    shaping[stateB[walker] .== 'S'] .= :circle
-                    shaping[stateB[walker] .== 'T'] .= :rect
-                    shaping[stateB[walker] .== 'I'] .= :star5
-                    coloring = Array{Symbol,1}(undef, m)
-                    coloring[stateB[walker] .== 'R'] .= :black
-                    coloring[stateB[walker] .== 'S'] .= :green
-                    coloring[stateB[walker] .== 'T'] .= :orange
-                    coloring[stateB[walker] .== 'I'] .= :red
-                    png(scatter(
-                    coordinate[:,1], coordinate[:,2],
-                    size = (800,800),
-                    xlims = (0,1),
-                    ylims = (0,1),
-                    markershape = shaping,
-                    markercolor = coloring,
-                    markersize = 8,
-                    markerstrokecolor = :black,
-                    ), new_folder * "/" * "$j.png")
-                end
-
-                for k in 1:m
-                    infect = sum(contact[k,:] .* (stateB .== 'I')[walker])
-                    if (stateB[walker[k]] == 'S') & (infect > 0) & happen(β_B)
-                        stateB[walker[k]] = 'T'
-                        stateA[walker[k]] = 'T'
-                        # println(k, " is infected!")
-                    end
-                end
-            end
-        end
-
-        local nA = [sum(stateA[layerA.fadjlist[i]] .== 'I') for i in 1:N]
-        local π_A = [1 - (1 - β_A)^nA[i] for i in 1:N]
-
-        local nB = [sum(stateB[location .== j] .== 'I') for j in 1:M]
-        local π_B = [1 - (1 - β_B)^nB[j] for j in 1:M]
-
-        for i in (1:N)[((π_A .+ π_B[location]) .> 0) .& (location .> 20)]
+        for i in (1:N)[((π_A .+ π_B[location]) .> 0)]
             if (stateA[i] == 'S') & (stateB[i] == 'S')
                 if happen(π_A[i]/(π_A[i] + π_B[location[i]]))
                     if happen(π_A[i])
@@ -294,7 +294,7 @@ function simulation(new_folder, seed, tag;
 end
 
 #---
-itr_begin = 701
+itr_begin = 1
 itr_end = 1000
 # itr_begin = itr_end = 188
 println("itr : ", itr_end)
@@ -324,13 +324,13 @@ let temp = Array{Int64,1}()
     end
     push!(itr_container, temp)
 end
-if itr_begin != itr_end popfirst!(itr_container) end
+if itr_begin != itr_end itr_container[1] = [0] end
 
 
 for itr_block in itr_container
     global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
     @threads for j in itr_block
-        push!(r,simulation(new_folder, j, ARGS[1]))
+        push!(r,simulation(new_folder, j, ARGS[1])
         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
         print("|")
     end

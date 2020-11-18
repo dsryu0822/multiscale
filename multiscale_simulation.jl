@@ -33,7 +33,7 @@ function happen(threshold::Float64)
 end
 
 function simulation(new_folder, seed, tag;
-    σ = 0.5, β_A = 0.5, β_B = 0.035, p = 0.8, γ_A = 0.1,
+    σ = 0.5, β_A = 0.5, β_B = 0.01, p = 0.8, γ_A = 0.1,
     N = 5 * 10^4)
 
     # number of individuals
@@ -223,7 +223,7 @@ function simulation(new_folder, seed, tag;
 
                 for k in 1:m
                     infect = sum(contact[k,:] .* (stateB .== 'I')[walker])
-                    if (stateB[walker[k]] == 'S') & (infect > 0) & happen(β_B)
+                    if (stateB[walker[k]] == 'S') & happen(1 - (1 - β_B)^infect)
                         stateB[walker[k]] = 'T'
                         stateA[walker[k]] = 'T'
                         # println(k, " is infected!")
@@ -324,7 +324,7 @@ let temp = Array{Int64,1}()
     end
     push!(itr_container, temp)
 end
-if itr_begin != itr_end popfirst!(itr_container) end
+if itr_begin != itr_end itr_container[1] = [0] end
 
 
 for itr_block in itr_container
