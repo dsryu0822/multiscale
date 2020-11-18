@@ -221,7 +221,7 @@ function simulation(new_folder, seed, tag;
                 # contact = 0.0 .< pairwise(Euclidean(), coordinate; dims=1) .< 0.2
 
                 # 그림 그리기
-                if (i ∈ location[host_ID]) & (seed == 0) & (t == 1)
+                if (i ∈ location[host_ID]) & (seed == -1) & (t == 1)
                     shaping = Array{Symbol,1}(undef, m)
                     shaping[stateB[walker] .== 'R'] .= :xcross
                     shaping[stateB[walker] .== 'S'] .= :circle
@@ -249,17 +249,9 @@ function simulation(new_folder, seed, tag;
                 n_B = sum(contact, dims=2)[:,1]
                 π_B = 1 .- (1 - β_B).^n_B
                 infected = happen.(π_B)
-                # println(infected)
-                # println(typeof(S_walker))
-                # println(typeof(infected))
-                # println(S_walker[infected])
+                
                 stateB[S_walker[infected]] .= 'T'
                 stateA[walker[(stateA[walker] .== 'S') .& (stateB[walker] .== 'T')]] .= 'T'
-                # n_B = contact * (stateB .== 'I')[walker]
-                # π_B = 1 .- (1 - β_B).^n_B
-                # infected = happen.(π_B)
-                # stateB[walker[(stateB[walker] .== 'S') .& infected]] .= 'T'
-                # stateA[walker[(stateA[walker] .== 'S') .& (stateB[walker] .== 'T')]] .= 'T'
             end
         end
         end
