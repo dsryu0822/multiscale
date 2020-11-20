@@ -33,7 +33,7 @@ function happen(threshold::Float64)
 end
 
 function simulation(new_folder, seed, tag;
-    σ = 0.5, β_A = 0.5, β_B = 0.01, p = 0.8, γ_A = 0.1,
+    σ = 0.5, β_A = 0.5, β_B = 0.005, p = 0.8, γ_A = 0.1,
     N = 5 * 10^4, hub = 20)
 
     # number of individuals
@@ -249,7 +249,7 @@ function simulation(new_folder, seed, tag;
                 n_B = sum(contact, dims=2)[:,1]
                 π_B = 1 .- (1 - β_B).^n_B
                 infected = happen.(π_B)
-                
+
                 stateB[S_walker[infected]] .= 'T'
                 stateA[walker[(stateA[walker] .== 'S') .& (stateB[walker] .== 'T')]] .= 'T'
             end
@@ -323,7 +323,7 @@ end
 
 #---
 itr_begin = 1
-itr_end = 100
+itr_end = 1000
 # itr_begin = itr_end = 0
 println("itr : ", itr_end)
 println("number of threads : ", nthreads())
@@ -358,7 +358,7 @@ if itr_begin != itr_end itr_container[1] = [0] end
 for itr_block in itr_container
     global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
     @threads for j in itr_block
-        push!(r,simulation(new_folder, j, ARGS[1], hub = 20, β_A = 0.0, p = 0.0, β_B = 0.005))
+        push!(r,simulation(new_folder, j, ARGS[1]))
         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
         print("|")
     end
