@@ -64,7 +64,7 @@ function simulation(new_folder, seed, tag;
     end
 
     layerA = erdos_renyi(N, 2N)
-    if hub == 20
+    if hub > 0
         layerC = barabasi_albert(backbone_size, m_0, m, complete = true)
     else
         layerC = barabasi_albert(backbone_size, m, complete = true)
@@ -190,11 +190,11 @@ function simulation(new_folder, seed, tag;
             println(time_histogram, k_B)
         end
 
-        if hub == 20
+        if hub > 0
         normalDist = Normal(0,0.05)
         uniformDdist = Uniform(0,1)
 
-        for i in 1:20
+        for i in 1:hub
             walker = (1:N)[location .== i]
             if sum(stateB[walker] .== 'I') ≤ 0 continue end
 
@@ -216,7 +216,7 @@ function simulation(new_folder, seed, tag;
                     end
                 end
 
-                contact = 0.0 .< D .< 0.2
+                contact = 0.0 .< D .< 0.1
                 # contact = 0.0 .< pairwise(Euclidean(), coordinate; dims=1) .< 0.2
 
                 # 그림 그리기
@@ -321,7 +321,7 @@ function simulation(new_folder, seed, tag;
 end
 
 #---
-itr_begin = 501
+itr_begin = 1
 itr_end = 1000
 # itr_begin = itr_end = 0
 println("itr : ", itr_end)
@@ -358,7 +358,7 @@ if itr_begin != itr_end itr_container[1] = [0] end
     global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
     @threads for j in itr_block
         push!(r,simulation(new_folder, j, ARGS[1],
-         N = 3 * 10^5, hub = 30, backbone_size = 6000, β_B = 0.003))
+         N = 3 * 10^5, hub = 30, backbone_size = 6000, β_B = 0.001))
         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
         print("|")
     end
