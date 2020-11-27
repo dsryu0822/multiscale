@@ -34,10 +34,8 @@ end
 
 function simulation(new_folder, seed, tag;
     σ = 0.5, β_A = 0.5, β_B = 0.005, p = 0.8, γ_A = 0.1,
-    N = 5 * 10^4, hub = 20)
+    N = 5 * 10^4, hub = 20, backbone_size = 1000)
 
-    # number of individuals
-    backbone_size = 1000 # size of barabasi_albert network
     m = 3 # number of new link, barabasi_albert
     m_0 = max(hub, m) # initial hub size, barabasi_albert
 
@@ -45,6 +43,7 @@ function simulation(new_folder, seed, tag;
     if seed == 0
         report = open(new_folder * "/report " * string(seed) * ".txt", "a")
 
+        println(report, "population = $N")
         println(report, "backbone size = $backbone_size")
         println(report, "m_0 = $m_0")
         println(report, "m = $m")
@@ -64,7 +63,7 @@ function simulation(new_folder, seed, tag;
         println(time_evolution,"t, I_A, hub_S_B, R_B, V, hub_I_B, in_flux, out_flux, comp_I")
     end
 
-    layerA = erdos_renyi(N, 5N)
+    layerA = erdos_renyi(N, 2N)
     if hub == 20
         layerC = barabasi_albert(backbone_size, m_0, m, complete = true)
     else
@@ -322,7 +321,7 @@ function simulation(new_folder, seed, tag;
 end
 
 #---
-itr_begin = 1
+itr_begin = 501
 itr_end = 1000
 # itr_begin = itr_end = 0
 println("itr : ", itr_end)
@@ -355,10 +354,11 @@ end
 if itr_begin != itr_end itr_container[1] = [0] end
 
 
-for itr_block in itr_container
+@time for itr_block in itr_container
     global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
     @threads for j in itr_block
-        push!(r,simulation(new_folder, j, ARGS[1]))
+        push!(r,simulation(new_folder, j, ARGS[1],
+         N = 3 * 10^5, hub = 30, backbone_size = 6000, β_B = 0.003))
         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
         print("|")
     end
