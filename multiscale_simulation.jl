@@ -33,8 +33,8 @@ function happen(threshold::Float64)
 end
 
 function simulation(new_folder, seed, tag;
-    σ = 0.5, β_A = 0.5, β_B = 0.005, p = 0.8, γ_A = 0.1,
-    N = 5 * 10^4, hub = 20, backbone_size = 1000)
+    σ = 0.5, β_A = 0.5, β_B = 0.001, p = 0.8, γ_A = 0.1,
+    N = 3 * 10^5, hub = 30, backbone_size = 6000)
 
     m = 3 # number of new link, barabasi_albert
     m_0 = max(hub, m) # initial hub size, barabasi_albert
@@ -322,7 +322,7 @@ end
 
 #---
 itr_begin = 1
-itr_end = 1000
+itr_end = 10000
 # itr_begin = itr_end = 0
 println("itr : ", itr_end)
 println("number of threads : ", nthreads())
@@ -357,8 +357,7 @@ if itr_begin != itr_end itr_container[1] = [0] end
 @time for itr_block in itr_container
     global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
     @threads for j in itr_block
-        push!(r,simulation(new_folder, j, ARGS[1],
-         N = 3 * 10^5, hub = 30, backbone_size = 6000, β_B = 0.001))
+        push!(r,simulation(new_folder, j, ARGS[1]))
         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
         print("|")
     end
