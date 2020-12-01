@@ -322,76 +322,96 @@ end
 
 #---
 itr_begin = 1
-itr_end = 10000
+itr_end = 100
 # itr_begin = itr_end = 0
 println("itr : ", itr_end)
 println("number of threads : ", nthreads())
 
 #---
 
-seed = [0]
-new_folder = string(NOW)[3:10] * "@" * string(NOW)[12:13] * "-" *
- string(NOW)[15:16] * " (" * string(seed[1]) * ")";
-mkdir(new_folder)
-
-global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
-println(meta_data,"seed, t, I_A, R_B, V, hub_I_max, hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10")
-close(meta_data)
-
-r = Array{Array{Int64,1},1}()
-
-itr_container = Array{Array{Int64,1},1}()
-let temp = Array{Int64,1}()
-    for i in itr_begin:itr_end
-        if ((i-1) % 100) == 0
-            push!(itr_container, temp)
-            temp = Array{Int64,1}()
-        end
-        push!(temp, i)
-    end
-    push!(itr_container, temp)
-end
-if itr_begin != itr_end itr_container[1] = [0] end
-
-
-@time for itr_block in itr_container
-    global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
-    @threads for j in itr_block
-        push!(r,simulation(new_folder, j, ARGS[1]))
-        println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
-        print("|")
-    end
-    println(itr_block[end])
-    close(meta_data)
-end
-println("")
-
-close(meta_data)
+# seed = [0]
+# new_folder = string(NOW)[3:10] * "@" * string(NOW)[12:13] * "-" *
+#  string(NOW)[15:16] * " (" * string(seed[1]) * ")";
+# mkdir(new_folder)
+#
+# global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
+# println(meta_data,"seed, t, I_A, R_B, V, hub_I_max, hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10")
+# close(meta_data)
+#
+# r = Array{Array{Int64,1},1}()
+#
+# itr_container = Array{Array{Int64,1},1}()
+# let temp = Array{Int64,1}()
+#     for i in itr_begin:itr_end
+#         if ((i-1) % 100) == 0
+#             push!(itr_container, temp)
+#             temp = Array{Int64,1}()
+#         end
+#         push!(temp, i)
+#     end
+#     push!(itr_container, temp)
+# end
+# if itr_begin != itr_end itr_container[1] = [0] end
+#
+#
+# @time for itr_block in itr_container
+#     global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
+#     @threads for j in itr_block
+#         push!(r,simulation(new_folder, j, ARGS[1]))
+#         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
+#         print("|")
+#     end
+#     println(itr_block[end])
+#     close(meta_data)
+# end
+# println("")
+#
+# close(meta_data)
 
 #---
 
 # parameter_length = 20
-# seed = rand(10000:99999,21)
-# change = (0:parameter_length)/parameter_length
-# @time for t in 1:21
-#     print(seed[t])
-#     new_folder = "prmt=" * string(change[t]) * "..." * string(NOW)[3:10] * "@" * string(NOW)[12:13] * "-" *
-#      string(NOW)[15:16] * " (" * string(seed[t]) * ")";
-#     mkdir(new_folder)
-#
-#     meta_data = open(new_folder * "/meta_data " * string(seed[t]) * ".csv", "a")
-#     println(meta_data,"seed, t, I_A, R_B, V, hub_I, hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10, hub_V_1, hub_V_2, hub_V_3, hub_V_4, hub_V_5, hub_V_6, hub_V_7, hub_V_8, hub_V_9, hub_V_10")
-#
-#     r = Array{Array{Int64,1},1}()
-#     # simulation(new_folder, 0, p = change[t])
-#     # simulation(new_folder, 0, σ = change[t])
-#     @threads for itr0 in 0:itr
-#         push!(r,simulation(new_folder, itr0, ARGS[1], β_B = 0.02 + change[t]/100, p = 0.8))
-#         # push!(r,simulation(new_folder, itr0, p = change[t] , σ = parse(Float64, ARGS[1])))
-#         println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
-#         print("|")
-#     end
-#     println("")
-#
-#     close(meta_data)
-# end
+parameter_begin = 0
+parameter_end = 1
+seed = rand(10000:99999,21)
+change = parameter_begin:0.05:parameter_end
+@time for t in 1:21
+    print(seed[t])
+
+    new_folder = "p=" * string(change[t]) * "..." * string(NOW)[3:10] * "@" * string(NOW)[12:13] * "-" *
+     string(NOW)[15:16] * " (" * string(seed[t]) * ")";
+    mkdir(new_folder)
+
+    global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
+    println(meta_data,"seed, t, I_A, R_B, V, hub_I_max, hub_I_1, hub_I_2, hub_I_3, hub_I_4, hub_I_5, hub_I_6, hub_I_7, hub_I_8, hub_I_9, hub_I_10")
+    close(meta_data)
+
+    r = Array{Array{Int64,1},1}()
+
+    itr_container = Array{Array{Int64,1},1}()
+    let temp = Array{Int64,1}()
+        for i in itr_begin:itr_end
+            if ((i-1) % 100) == 0
+                push!(itr_container, temp)
+                temp = Array{Int64,1}()
+            end
+            push!(temp, i)
+        end
+        push!(itr_container, temp)
+    end
+    if itr_begin != itr_end itr_container[1] = [0] end
+
+    @time for itr_block in itr_container
+        global meta_data = open(new_folder * "/meta_data " * string(seed[1]) * ".csv", "a")
+        @threads for j in itr_block
+            push!(r,simulation(new_folder, j, ARGS[1], p = change[t]))
+            println(meta_data, replace(replace(string(r[end]), "[" => ""), "]" => ""))
+            print("|")
+        end
+        println(itr_block[end])
+        close(meta_data)
+    end
+    println("")
+
+    close(meta_data)
+end
