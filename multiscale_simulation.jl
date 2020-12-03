@@ -4,7 +4,10 @@ if length(ARGS) == 0
 end # push!(ARGS, "")
 
 if Sys.iswindows()
-    cd("C:/Users/rmsms/OneDrive/lab/Multiscale")
+    try
+        cd("E:/multiscale")
+    finally
+        cd("C:/multiscale")
 elseif Sys.islinux()
     cd("/home/ryu/multiscale")
 end
