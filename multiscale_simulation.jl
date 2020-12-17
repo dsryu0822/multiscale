@@ -6,8 +6,9 @@ end # push!(ARGS, "")
 if Sys.iswindows()
     try
         cd("E:/multiscale")
-    finally
+    catch
         cd("C:/multiscale")
+    end
 elseif Sys.islinux()
     cd("/home/ryu/multiscale")
 end
@@ -374,11 +375,11 @@ println("number of threads : ", nthreads())
 #---
 
 # parameter_length = 20
-parameter_begin = 0
-parameter_end = 1
-seed = rand(10000:99999,21)
+parameter_begin = 0.2
+parameter_end = 1.0
 change = parameter_begin:0.05:parameter_end
-@time for t in 1:21
+seed = rand(10000:99999,length(change))
+@time for t in 1:length(change)
     print(seed[t])
 
     new_folder = "p=" * string(change[t]) * "..." * string(NOW)[3:10] * "@" * string(NOW)[12:13] * "-" *
